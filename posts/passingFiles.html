@@ -48,7 +48,7 @@ python3 -m http.server<br>
 </p>
 <pre>
 <code>
-wget http://<IP>:<Port>/<file><br>
+wget http://{IP}:{Port}/{file}<br>
 </code>
 </pre>
 <h1>
@@ -85,7 +85,7 @@ Serving HTTP on 0.0.0.0 port 8000 (http://0.0.0.0:8000/) ...<br>
 	You will see that an HTTP server has been started on port 8000. This is the port that this module uses by default.
 </p>
 <p>
-	Now, on our destination machine we can use wget to retrieve the file that has been hosted by the HTTP server. Remember that we are trying to get the passwords.txt file. So we will use wget to download this. The syntax of of wget is as follows: wget http://<IP>:<Port>/file.name.
+	Now, on our destination machine we can use wget to retrieve the file that has been hosted by the HTTP server. Remember that we are trying to get the passwords.txt file. So we will use wget to download this. The syntax of of wget is as follows: wget http://{IP}:{Port}/file.name.
 </p>
 <pre>
 <code>
@@ -95,7 +95,7 @@ Connecting to 127.0.0.1:8000... connected.<br>
 HTTP request sent, awaiting response... 200 OK<br>
 Length: 18 [text/plain]<br>
 Saving to: ‘password.txt’<br>
-password.txt                                100%[==========================================================================================>]      18  --.-KB/s    in 0s<br>
+password.txt                                100%[==========================================================================================}]      18  --.-KB/s    in 0s<br>
 2021-02-03 00:19:27 (80.8 KB/s) - ‘password.txt’ saved [18/18]<br>
 </code>
 </pre>

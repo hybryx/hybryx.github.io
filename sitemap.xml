@@ -2,9 +2,16 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
-    <loc>https://hybryx.github.io/categories/</loc>
+    <loc>https://hybryx.github.io/posts/demystifyingad/</loc>
+    <lastmod>2023-08-16T23:39:21-04:00</lastmod>
   </url><url>
     <loc>https://hybryx.github.io/</loc>
+    <lastmod>2023-08-16T23:39:21-04:00</lastmod>
+  </url><url>
+    <loc>https://hybryx.github.io/posts/</loc>
+    <lastmod>2023-08-16T23:39:21-04:00</lastmod>
+  </url><url>
+    <loc>https://hybryx.github.io/categories/</loc>
   </url><url>
     <loc>https://hybryx.github.io/tags/</loc>
   </url>

@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    
+    <title>Demystifying AD - Planning A City Based On Active Directory | Hybryx&#39;s CyberSecurity Ramblings</title>
+    <meta name="viewport" content="width=device-width,minimum-scale=1">
+    <meta name="description" content="Intro If someone were to ask you, &ldquo;What is Active Directory?&rdquo; how would you even begin to describe it? Is it a product, a piece of software, physical servers, or the ubiquitous cloud? Lets ask our friendly AI overlords, ChatGPT, what Active Directory is in as short of terms as possible. Its response: &ldquo;Active Directory is a Microsoft service for managing users, computers, and resources on a network. It organizes them in a hierarchical structure, offering centralized authentication, access control, and management.">
+    <meta name="generator" content="Hugo 0.117.0">
+    
+    
+    
+    
+      <meta name="robots" content="noindex, nofollow">
+    
+
+    
+<link rel="stylesheet" href="/ananke/css/main.min.css" >
+
+
+
+    
+    
+    
+      
+
+    
+
+    
+    
+    <meta property="og:title" content="Demystifying AD - Planning A City Based On Active Directory" />
+<meta property="og:description" content="Intro If someone were to ask you, &ldquo;What is Active Directory?&rdquo; how would you even begin to describe it? Is it a product, a piece of software, physical servers, or the ubiquitous cloud? Lets ask our friendly AI overlords, ChatGPT, what Active Directory is in as short of terms as possible. Its response: &ldquo;Active Directory is a Microsoft service for managing users, computers, and resources on a network. It organizes them in a hierarchical structure, offering centralized authentication, access control, and management." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://hybryx.github.io/posts/demystifyingad/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2023-08-16T23:39:21-04:00" />
+<meta property="article:modified_time" content="2023-08-16T23:39:21-04:00" />
+<meta itemprop="name" content="Demystifying AD - Planning A City Based On Active Directory">
+<meta itemprop="description" content="Intro If someone were to ask you, &ldquo;What is Active Directory?&rdquo; how would you even begin to describe it? Is it a product, a piece of software, physical servers, or the ubiquitous cloud? Lets ask our friendly AI overlords, ChatGPT, what Active Directory is in as short of terms as possible. Its response: &ldquo;Active Directory is a Microsoft service for managing users, computers, and resources on a network. It organizes them in a hierarchical structure, offering centralized authentication, access control, and management."><meta itemprop="datePublished" content="2023-08-16T23:39:21-04:00" />
+<meta itemprop="dateModified" content="2023-08-16T23:39:21-04:00" />
+<meta itemprop="wordCount" content="1625">
+<meta itemprop="keywords" content="" /><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Demystifying AD - Planning A City Based On Active Directory"/>
+<meta name="twitter:description" content="Intro If someone were to ask you, &ldquo;What is Active Directory?&rdquo; how would you even begin to describe it? Is it a product, a piece of software, physical servers, or the ubiquitous cloud? Lets ask our friendly AI overlords, ChatGPT, what Active Directory is in as short of terms as possible. Its response: &ldquo;Active Directory is a Microsoft service for managing users, computers, and resources on a network. It organizes them in a hierarchical structure, offering centralized authentication, access control, and management."/>
+
+	
+  </head>
+
+  <body class="ma0 avenir bg-near-white">
+
+    
+   
+  
+
+  <header>
+    <div class="bg-black">
+      <nav class="pv3 ph3 ph4-ns" role="navigation">
+  <div class="flex-l justify-between items-center center">
+    <a href="/" class="f3 fw2 hover-white no-underline white-90 dib">
+      
+        Hybryx&#39;s CyberSecurity Ramblings
+      
+    </a>
+    <div class="flex-l items-center">
+      
+
+      
+      
+<div class="ananke-socials">
+  
+</div>
+
+    </div>
+  </div>
+</nav>
+
+    </div>
+  </header>
+
+
+
+    <main class="pb7" role="main">
+      
+  
+  <article class="flex-l flex-wrap justify-between mw8 center ph3">
+    <header class="mt4 w-100">
+      <aside class="instapaper_ignoref b helvetica tracked">
+          
+        POSTS
+      </aside>
+      
+
+
+
+
+
+
+
+
+
+
+  <div id="sharing" class="mt3 ananke-socials">
+    
+  </div>
+
+
+      <h1 class="f1 athelas mt3 mb1">Demystifying AD - Planning A City Based On Active Directory</h1>
+      
+      
+      
+      <time class="f6 mv4 dib tracked" datetime="2023-08-16T23:39:21-04:00">August 16, 2023</time>
+      
+
+      
+      
+    </header>
+    <div class="nested-copy-line-height lh-copy serif f4 nested-links mid-gray pr4-l w-two-thirds-l"><h1 id="intro">Intro</h1>
+<p>If someone were to ask you, &ldquo;What is Active Directory?&rdquo; how would you even begin to describe it? Is it a product, a piece of software, physical servers, or the ubiquitous cloud? Lets ask our friendly AI overlords, ChatGPT, what Active Directory is in as short of terms as possible. Its response: &ldquo;Active Directory is a Microsoft service for managing users, computers, and resources on a network. It organizes them in a hierarchical structure, offering centralized authentication, access control, and management.&rdquo;. While <em>technically</em> correct, this answer still does not convey the <strong>why</strong> behind Active Directory. This blog series will explain what Active Directory is by deploying a &ldquo;city&rdquo; domain.</p>
+<h1 id="welcome-to-techcommunity">Welcome to tech.com(munity)</h1>
+<h2 id="i-promise-this-will-make-sense">I Promise This Will Make Sense</h2>
+<p>Before we begin setting anything up, let me first convince you that explaining Active Directory using a city as an analogy is easier to comprehend than reading some tech word soup.
+A city has a Mayor (Administrator) that is the chief officer of the city (Active Directory Domain). Inside this city, there are residents (AD Users) and various buildings (AD Computers) that can have multiple roles. Some may be residential houses (general AD joined workstations) while others may be shared resources for the town such as a library (File Server). Additionally, the city has certain rules that must be adhered to by its citizens (Group Policy).</p>
+<p>After some time, a city may expand and add additional sections to the city (sub-domains). A lot of times, these additional sections have their own local government that must abide by the top-level mayor&rsquo;s decisions (Domain Admins vs Enterprise Admins).</p>
+<p>Note, from here on out I will start talking about the town/AD Domain more interchangeably. Just know that town/city/AD Domain/AD/Domain all are interchangeable unless I specifically call out otherwise. Also to those of you screaming &ldquo;BUT ITS A FOREST&rdquo;; just wait, we&rsquo;ll get there eventually.</p>
+<h2 id="planning-our-first-city">Planning our first city</h2>
+<p>The very first consideration when deploying a new domain is its official name. Since we are planning our high-tech AD community, our town will be called &ldquo;tech.com&rdquo;. Names of things are very important within AD so its best practice to name all of your resources using clear descriptors. Our first task is to rename our Windows Server&rsquo;s hostname (the NetBios name) to &ldquo;cityhall&rdquo;. The city hall of any town is the heart of that town where all information flows from and goes to. Run the following PowerShell command to rename our computer correctly.</p>
+<p><img src="/demystifyingad_01.png" alt="Image"></p>
+<p>Any random building can be named city hall but that does not make it the town hall necessarily. What makes it the central governing building is the mass agreement that THIS specific building is the town hall. In the same way by naming the computer &ldquo;cityhall&rdquo; we are not the Domain Controller yet, we do this by deploying a new domain and promoting this specific machine to be the Domain Controller. On your Windows Server open up the application &ldquo;Server Manager&rdquo;, select &ldquo;Manage&rdquo; at the top right and finally select &ldquo;Add Roles and Features&rdquo;.</p>
+<p><img src="/demystifyingad_02.png" alt="Image"></p>
+<p>Click next and select &ldquo;Role-based or feature-based installation&rdquo; which allows us to configure the local machine. On the next screen ensure that our &ldquo;cityhall&rdquo; machine is selected from the list under &ldquo;Server Pool&rdquo; and then select next. The next screen should be the &ldquo;Select server roles&rdquo; screen which is where we will chose the services we want to deploy.</p>
+<p>This is where a lot of the confusion about AD comes from. ALL of this, and more, is Active Directory. Its a lot to comprehend and understand how it all fits together. However, this blog series is directly aimed at taking small bites out of this large elephant.
+For now, we want two select two services: &ldquo;Active Directory Domain Services&rdquo; and &ldquo;DNS Server&rdquo;. Domain Services is what most people think of when asked about AD. This allows for the organization and management of AD Users and Computers the same way a city hall manages the residents and properties of its town. The DNS service is also deployed, but I will explain this in further detail later.</p>
+<p><img src="/demystifyingad_03.png" alt="Image"></p>
+<p>Click Next until you reach the &ldquo;Confirm installation selections&rdquo; screen. Check the &ldquo;Restart the destination server automatically if required&rdquo; checkbox and select &ldquo;Install&rdquo;.</p>
+<p><img src="/demystifyingad_04.png" alt="Image"></p>
+<p>You can close this popup screen to only show the &ldquo;Server Manager&rdquo; screen. Once you have a yellow caution triangle on the top right, we are ready for our next step. Click on the flag then select &ldquo;Promote this server to a domain controller&rdquo;.</p>
+<p><img src="/demystifyingad_05.png" alt="Image"></p>
+<p>So what is actually about to happen? In our city analogy, we have built the physical city hall building and declared its intent of being the official city hall of tech.com. However, this is not official yet. By promoting this server to be a domain controller, we are officially declaring a new domain. Think of this step as a city hall&rsquo;s ribbon-cutting ceremony.</p>
+<p>The first window we see is the &ldquo;Deployment Configuration&rdquo; screen. Here we have three options:</p>
+<ul>
+<li>Add a domain controller to an existing domain</li>
+<li>Add a new domain to an existing forest</li>
+<li>Add a new forest</li>
+</ul>
+<p>Up until this point we have been using the term &ldquo;domain&rdquo; when in reality we should be using the term &ldquo;forest&rdquo;. This distinction will come into better view in a later post in this series. But for now, know that an AD domain is apart of an AD forest. If New York City is the forest, Brooklyn/Bronx/Manhattan/etc are the individual domains that make up the forest as a whole. In our case, we have one forest (tech.com) that has one domain. Therefor it is not entirely incorrect to call this a domain. This distinction is critical to understanding AD&rsquo;s hiegharchy and layout. To not complicate things, we will still refer to this as a single domain forest and expand on this concept in a later post.</p>
+<p>For now, select &ldquo;Add a new forest&rdquo; and specify the &ldquo;Root domain name&rdquo; of our town which is &ldquo;tech.com&rdquo;.</p>
+<p><img src="/demystifyingad_06.png" alt="Image"></p>
+<p>Next we select the multiple options that define the parameters of the forest. I will cover all of these in greater detail later but for now, ensure that your options match the screenshot below and record the DSRM password that you select.</p>
+<p><img src="/demystifyingad_07.png" alt="Image"></p>
+<p>The next screen will ask about &ldquo;DNS Delegation&rdquo;, you can leave the box unchecked and click next. The next screen will ask about the NetBIOS domain name. Remember that in a Windows environment, the NetBIOS domain name and hostname are essentially the same. Names are very important to an AD domain. Ensure that this matches the hostname we set for our Domain Controller (TECH) and click &ldquo;Next&rdquo;.</p>
+<p><img src="/demystifyingad_08.png" alt="Image"></p>
+<p>The next screen will ask about several important AD files and where to store them. We will cover the uses of these files in a following post. For now, ensure that they match the screenshot below.</p>
+<p><img src="/demystifyingad_09.png" alt="Image"></p>
+<p>The next couple of screens are just confirming what options we have selected to use for installing our domain controller. Select next until you reach the &ldquo;Prerequisites Check&rdquo; screen. Then select &ldquo;Install&rdquo;.</p>
+<p><img src="/demystifyingad_10.png" alt="Image"></p>
+<p>After some time the server will restart, this is normal since we selected the option to restart the server is necessary. When the computer comes back up, you may see the following screen for quite some time. There is nothing to worry about as the server is making all the changes necessary to become a domain controller. Depending on your hardware, this may take a while.</p>
+<p><img src="/demystifyingad_11.png" alt="Image"></p>
+<p>Eventually, this will go away and you will be presented with a standard login screen. However this time the login username will be slightly different.</p>
+<p><img src="/demystifyingad_12.png" alt="Image"></p>
+<p>This format &ldquo;TECH\Administrator&rdquo; is asking for the password to access the Domain User account &ldquo;Administrator&rdquo; that is a part of the &ldquo;TECH&rdquo; domain. Remember that we are in a single-domain forest, so this is a distinction without a difference until we deploy an additional domain later. Either way, login using the administrator&rsquo;s password. Once logged in, open PowerShell and run the following command: <code>klist</code>. There are several things to call out here that most likely will not make sense at this point. Don&rsquo;t fret! This blog series will eventually cover all of these topics in detail. For now lets cover the basics and apply it to what we know currently.</p>
+<p>We have logged into a domain controller (city hall) using the administrator account (mayor) for the domain/forest (the city as a whole). The command we ran shows us the Kerberos tickets that we currently have assigned to us. &ldquo;What is a Kerberos?&rdquo; you may ask. For now, know that it is an authentication mechanism that allows users and computers (residents and physical structures of the city) to authenticate to the domain. There will be a whole blog post about Kerberos vs other authentication mechanisms but for now, think of this as the mayor (Administrator) showing his access badge to the security guard (Kerberos) and entering the city hall (domain controller) to perform their role as the mayor (Domain Administrator).</p>
+<p><img src="/demystifyingad_13.png" alt="Image"></p>
+<ul>
+<li>Item 1 shows who we are and what domain we are authorized in. In this case, we are the domain administrator for the tech.com domain</li>
+<li>Item 2 shows how we authenticated using Kerberos (shorthand is krbtgt)</li>
+<li>Item 3 shows the KDC (Key Distribution Center) that was used to provide authentication. Think of this like the security guard standing outside the city hall</li>
+</ul>
+<h1 id="wrap-up">Wrap Up</h1>
+<p>This blog correlates the deployment of an Active Directory Domain to a new city being built. Additionally, we have started the lay ground work for how the structure (hierarchy) of our domain (city) will be laid out. The next post in this series will further expand on the hierarchy of an AD domain by adding users, groups, and computer objects to our domain, the same way as new residents moving into houses within the new town of tech.com(munity).</p>
+<ul class="pa0">
+  
+</ul>
+<div class="mt6 instapaper_ignoref">
+      
+      
+      </div>
+    </div>
+
+    <aside class="w-30-l mt6-l">
+
+
+
+
+</aside>
+
+  </article>
+
+    </main>
+    <footer class="bg-black bottom-0 w-100 pa3" role="contentinfo">
+  <div class="flex justify-between">
+  <a class="f4 fw4 hover-white no-underline white-70 dn dib-ns pv2 ph3" href="https://hybryx.github.io/" >
+    &copy;  Hybryx's CyberSecurity Ramblings 2023 
+  </a>
+    <div>
+<div class="ananke-socials">
+  
+</div>
+</div>
+  </div>
+</footer>
+
+  </body>
+</html>
